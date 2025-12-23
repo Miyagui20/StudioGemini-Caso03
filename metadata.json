@@ -1,0 +1,8 @@
+{
+  "name": "Gemini Multi-Flow Studio",
+  "description": "Una aplicación web integral que permite la generación de imágenes y la edición inteligente de texto utilizando modelos de la familia Gemini 3 Preview.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
