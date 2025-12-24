@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { generateImage } from '../services/geminiService';
-import { ImageStyle } from '../types';
+import { ImageStyle, AspectRatio } from '../types';
 
 interface ImageGeneratorProps {
   onLoading: (loading: boolean) => void;
@@ -12,20 +12,19 @@ interface ImageGeneratorProps {
 export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ onLoading, onError, onResult }) => {
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState<ImageStyle>('ninguna');
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim()) return;
-
     onLoading(true);
     onError(null);
     onResult(null);
-
     try {
-      const imageUrl = await generateImage({ prompt, style });
+      const imageUrl = await generateImage({ prompt, style, aspectRatio });
       onResult(imageUrl);
     } catch (err: any) {
-      onError(err.message || "Error al generar la imagen.");
+      onError(err.message);
     } finally {
       onLoading(false);
     }
@@ -34,70 +33,76 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ onLoading, onErr
   const handleClear = () => {
     setPrompt('');
     setStyle('ninguna');
+    setAspectRatio('1:1');
     onError(null);
     onResult(null);
   };
 
-  const styles: { label: string; value: ImageStyle }[] = [
-    { label: 'Ninguno', value: 'ninguna' },
-    { label: 'Anime', value: 'Anime' },
-    { label: 'Studio Ghibli', value: 'Ghibli' },
-    { label: 'Realista', value: 'Realista' },
-    { label: 'Óleo', value: 'Oleo' },
-  ];
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-2">Descripción de la imagen (Prompt)</label>
+        <label className="block text-sm font-bold text-slate-700 mb-2 uppercase tracking-tight">Descripción Visual</label>
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Ej: Un paisaje futurista con cascadas de luz..."
-          className="w-full h-32 px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none shadow-sm"
+          placeholder="Ej: Un astronauta explorando un bosque de cristales bioluminiscentes..."
+          className="w-full h-32 px-5 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all resize-none shadow-sm text-slate-700"
           required
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-2">Estilo de Imagen</label>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-          {styles.map((s) => (
-            <button
-              key={s.value}
-              type="button"
-              onClick={() => setStyle(s.value)}
-              className={`px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                style === s.value
-                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
-                  : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300'
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-tight">Estilo Artístico</label>
+          <div className="flex flex-wrap gap-2">
+            {['ninguna', 'Anime', 'Ghibli', 'Realista', 'Oleo'].map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStyle(s as ImageStyle)}
+                className={`px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
+                  style === s ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-100 text-slate-500 hover:border-indigo-200'
+                }`}
+              >
+                {s === 'ninguna' ? 'Natural' : s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-bold text-slate-700 mb-3 uppercase tracking-tight">Formato (Ratio)</label>
+          <div className="flex flex-wrap gap-2">
+            {['1:1', '16:9', '9:16', '4:3'].map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setAspectRatio(r as AspectRatio)}
+                className={`px-3 py-2 rounded-xl border-2 text-xs font-bold transition-all ${
+                  aspectRatio === r ? 'bg-slate-800 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-500 hover:border-slate-200'
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex gap-3 pt-4">
         <button
           type="submit"
-          className="flex-grow bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-slate-300 transition-all flex items-center justify-center gap-2 group"
+          className="flex-grow bg-indigo-600 hover:bg-indigo-700 text-white font-black py-4 rounded-2xl shadow-xl shadow-indigo-200 transition-all flex items-center justify-center gap-2 group active:scale-[0.98]"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:scale-110 transition-transform" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-          </svg>
-          Generar con IA Flash
+          <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          GENERAR OBRA
         </button>
         <button
           type="button"
           onClick={handleClear}
-          className="px-8 bg-white border border-slate-200 text-slate-700 font-bold py-4 rounded-xl shadow-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+          className="px-6 bg-slate-100 text-slate-600 font-bold py-4 rounded-2xl hover:bg-slate-200 transition-all flex items-center gap-2"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-          Limpiar
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
         </button>
       </div>
     </form>

@@ -16,10 +16,6 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             <h1 className="text-xl font-bold text-slate-800">Studio <span className="text-indigo-600">Gemini</span></h1>
           </div>
-          <nav className="hidden md:flex gap-6 text-sm font-medium text-slate-600">
-            <span className="hover:text-indigo-600 cursor-pointer transition-colors">Inicio</span>
-            <span className="hover:text-indigo-600 cursor-pointer transition-colors">Documentación</span>
-          </nav>
         </div>
       </header>
       

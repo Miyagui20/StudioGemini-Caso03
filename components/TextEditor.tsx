@@ -10,7 +10,8 @@ interface TextEditorProps {
 
 export const TextEditor: React.FC<TextEditorProps> = ({ onLoading, onError, onResult }) => {
   const [text, setText] = useState('');
-  const [instruction, setInstruction] = useState('');
+  const [customInstruction, setCustomInstruction] = useState('');
+  const [selectedInstructions, setSelectedInstructions] = useState<string[]>([]);
 
   const commonInstructions = [
     "Corregir gramática y ortografía",
@@ -20,16 +21,34 @@ export const TextEditor: React.FC<TextEditorProps> = ({ onLoading, onError, onRe
     "Reescribir de forma creativa"
   ];
 
+  const toggleInstruction = (item: string) => {
+    setSelectedInstructions(prev => 
+      prev.includes(item) 
+        ? prev.filter(i => i !== item) 
+        : [...prev, item]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || !instruction.trim()) return;
+    
+    // Construir la instrucción final combinando selecciones y texto manual
+    const combinedInstructions = [
+      ...selectedInstructions,
+      ...(customInstruction.trim() ? [customInstruction.trim()] : [])
+    ].join(", ");
+
+    if (!text.trim() || !combinedInstructions) {
+      onError("Por favor, introduce un texto y al menos una instrucción.");
+      return;
+    }
 
     onLoading(true);
     onError(null);
     onResult(null);
 
     try {
-      const editedText = await editContent({ text, instruction });
+      const editedText = await editContent({ text, instruction: combinedInstructions });
       onResult(editedText);
     } catch (err: any) {
       onError(err.message || "Ocurrió un error al procesar el texto.");
@@ -40,7 +59,8 @@ export const TextEditor: React.FC<TextEditorProps> = ({ onLoading, onError, onRe
 
   const handleClear = () => {
     setText('');
-    setInstruction('');
+    setCustomInstruction('');
+    setSelectedInstructions([]);
     onError(null);
     onResult(null);
   };
@@ -59,30 +79,36 @@ export const TextEditor: React.FC<TextEditorProps> = ({ onLoading, onError, onRe
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-slate-700 mb-2">¿Qué deseas hacer?</label>
+        <label className="block text-sm font-semibold text-slate-700 mb-2">
+          ¿Qué deseas hacer? <span className="text-xs font-normal text-slate-400">(Selección múltiple permitida)</span>
+        </label>
         <div className="flex flex-wrap gap-2 mb-3">
           {commonInstructions.map((item) => (
             <button
               key={item}
               type="button"
-              onClick={() => setInstruction(item)}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                instruction === item 
-                  ? 'bg-indigo-600 border-indigo-600 text-white' 
+              onClick={() => toggleInstruction(item)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-all flex items-center gap-1.5 ${
+                selectedInstructions.includes(item) 
+                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-md' 
                   : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-400 hover:text-indigo-600'
               }`}
             >
+              {selectedInstructions.includes(item) && (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
               {item}
             </button>
           ))}
         </div>
         <input
           type="text"
-          value={instruction}
-          onChange={(e) => setInstruction(e.target.value)}
-          placeholder="O escribe tu propia instrucción personalizada..."
+          value={customInstruction}
+          onChange={(e) => setCustomInstruction(e.target.value)}
+          placeholder="O añade otra instrucción personalizada aquí..."
           className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm"
-          required
         />
       </div>
 
