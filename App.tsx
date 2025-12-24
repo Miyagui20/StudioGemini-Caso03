@@ -133,7 +133,7 @@ const App: React.FC = () => {
           <div className="inline-block px-4 py-1.5 mb-4 rounded-full bg-indigo-50 text-indigo-600 text-xs font-black uppercase tracking-widest animate-pulse">
             IA Generativa Avanzada
           </div>
-          <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight">ScriPic<span className="text-indigo-600">IA</span></h2>
+          <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight">Scri<span className="text-indigo-600">Pic</span></h2>
           <div className="flex flex-center justify-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
             {[
               { id: WorkflowType.IMAGE_GENERATION, label: 'Imagen', icon: '🎨' },
