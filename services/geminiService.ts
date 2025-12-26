@@ -3,15 +3,11 @@ import { GoogleGenAI } from "@google/genai";
 import { ImageGenConfig, TextEditConfig, SearchResult } from "../types";
 
 /**
- * Inicialización directa del SDK de Google GenAI.
- * Se utiliza process.env.API_KEY inyectado automáticamente por el entorno.
+ * Inicialización centralizada de la IA.
+ * La clave se obtiene de process.env.API_KEY, definida en vite.config.ts.
  */
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-/**
- * Genera imágenes usando el modelo gemini-2.5-flash-image.
- * Soporta configuración de aspecto y estilos.
- */
 export const generateImage = async (config: ImageGenConfig): Promise<string> => {
   const { prompt, style, aspectRatio } = config;
   const styleText = style && style !== 'ninguna' ? ` en estilo artístico ${style}.` : '';
@@ -30,24 +26,21 @@ export const generateImage = async (config: ImageGenConfig): Promise<string> => 
 
     const candidate = response.candidates?.[0];
     if (!candidate || candidate.finishReason === 'SAFETY') {
-      throw new Error("La generación de imagen fue bloqueada por filtros de seguridad.");
+      throw new Error("La generación fue bloqueada por filtros de seguridad. Prueba con otra descripción.");
     }
 
     const imagePart = candidate.content?.parts?.find(p => p.inlineData);
     if (!imagePart || !imagePart.inlineData) {
-      throw new Error("El modelo no devolvió datos de imagen válidos.");
+      throw new Error("El modelo no devolvió una imagen válida.");
     }
     
     return `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
   } catch (error: any) {
-    console.error("Error en generateImage:", error);
-    throw new Error(error.message || "Error al conectar con el servicio de generación de imágenes.");
+    console.error("Error en Imagen:", error);
+    throw new Error(error.message || "Fallo en la conexión con el generador de imágenes.");
   }
 };
 
-/**
- * Realiza una búsqueda profunda usando gemini-3-flash-preview con Google Search Grounding.
- */
 export const performSearch = async (query: string): Promise<SearchResult> => {
   try {
     const response = await ai.models.generateContent({
@@ -55,7 +48,7 @@ export const performSearch = async (query: string): Promise<SearchResult> => {
       contents: query,
       config: {
         tools: [{ googleSearch: {} }],
-        systemInstruction: 'Eres un investigador profesional. Tu tarea es proporcionar información actual y verificada. Proporciona hallazgos estructurados: Título, Lista de puntos clave y Fuente. Separa cada hallazgo con la línea: --- No incluyas introducciones ni conclusiones.',
+        systemInstruction: 'Eres un investigador profesional. Proporciona hallazgos estructurados: Título, Puntos clave y Fuente. Separa bloques con "---".',
       },
     });
 
@@ -67,38 +60,30 @@ export const performSearch = async (query: string): Promise<SearchResult> => {
       })) || [];
 
     return { 
-      text: response.text || "No se encontraron resultados específicos para esta consulta.", 
+      text: response.text || "Sin resultados específicos.", 
       sources 
     };
   } catch (error: any) {
-    console.error("Error en performSearch:", error);
-    throw new Error(error.message || "Error al realizar la investigación en tiempo real.");
+    console.error("Error en Búsqueda:", error);
+    throw new Error("No se pudo completar la investigación en tiempo real.");
   }
 };
 
-/**
- * Procesa y edita texto usando gemini-3-flash-preview.
- */
 export const editContent = async (config: TextEditConfig): Promise<string> => {
   const { text, instruction } = config;
-  
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: `INSTRUCCIÓN: ${instruction}\n\nTEXTO ORIGINAL: "${text}"`,
       config: {
-        systemInstruction: 'Eres un editor de estilo experto. Tu única tarea es transformar el texto del usuario siguiendo sus instrucciones exactas. Devuelve UNICAMENTE el texto transformado. No expliques qué hiciste, no saludes, ni añadas comentarios.',
+        systemInstruction: 'Eres un editor experto. Transforma el texto según las instrucciones. Devuelve SOLO el texto editado, sin comentarios.',
         temperature: 0.7
       }
     });
 
-    if (!response.text) {
-      throw new Error("El modelo no generó una respuesta de texto válida.");
-    }
-
-    return response.text;
+    return response.text || "El modelo no generó respuesta.";
   } catch (error: any) {
-    console.error("Error en editContent:", error);
-    throw new Error(error.message || "Error al procesar el texto con inteligencia artificial.");
+    console.error("Error en Edición:", error);
+    throw new Error("Error al procesar el texto con IA.");
   }
 };
