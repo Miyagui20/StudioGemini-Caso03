@@ -108,12 +108,14 @@ const App: React.FC = () => {
     return (
       <div className="mt-8 md:mt-10 bg-slate-900 text-slate-100 rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl relative group overflow-hidden">
         <div className="relative z-10 whitespace-pre-wrap text-base md:text-lg italic leading-relaxed">{state.result as string}</div>
-        <button 
-          onClick={() => navigator.clipboard.writeText(state.result as string)} 
-          className="mt-6 text-[10px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
-        >
-          Copiar resultado
-        </button>
+        <div className="flex justify-end mt-6">
+          <button 
+            onClick={() => navigator.clipboard.writeText(state.result as string)} 
+            className="text-[10px] font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors py-2 px-4 bg-slate-800 rounded-lg"
+          >
+            Copiar resultado
+          </button>
+        </div>
       </div>
     );
   };
@@ -130,7 +132,7 @@ const App: React.FC = () => {
           <div className="grid grid-cols-3 gap-1 md:flex md:justify-center md:gap-4 mb-2 max-w-sm mx-auto md:max-w-none">
             {[
               { id: WorkflowType.IMAGE_GENERATION, label: 'Imagen', icon: '🎨' },
-              { id: WorkflowType.TEXT_EDITING, label: 'Texto', icon: '✍️' },
+              { id: WorkflowType.TEXT_EDITING, label: 'Texto', icon: '📄' },
               { id: WorkflowType.SEARCH_GROUNDING, label: 'Investigar', icon: '🌐' }
             ].map(tab => (
               <button
