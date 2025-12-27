@@ -1,14 +1,14 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { ImageGenConfig, TextEditConfig, SearchResult } from "../types";
 
 /**
- * Inicialización centralizada de Google GenAI.
- * La constante process.env.API_KEY es inyectada por Vite.
+ * Servicio de Inteligencia Artificial.
+ * Se instancia el cliente dentro de cada llamada para asegurar la captura
+ * correcta de las variables de entorno en el cliente (Vite define).
  */
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateImage = async (config: ImageGenConfig): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const { prompt, style, aspectRatio } = config;
   const styleText = style && style !== 'ninguna' ? ` en estilo artístico ${style}.` : '';
   const fullPrompt = `${prompt}${styleText} Alta calidad, detalle cinematográfico, 4k, iluminación profesional.`;
@@ -42,6 +42,7 @@ export const generateImage = async (config: ImageGenConfig): Promise<string> => 
 };
 
 export const performSearch = async (query: string): Promise<SearchResult> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -70,6 +71,7 @@ export const performSearch = async (query: string): Promise<SearchResult> => {
 };
 
 export const editContent = async (config: TextEditConfig): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const { text, instruction } = config;
   
   try {

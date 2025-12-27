@@ -1,0 +1,1 @@
+// Archivo desactivado para favorecer el procesamiento en el lado del cliente y evitar errores de despliegue en Vercel Functions.
