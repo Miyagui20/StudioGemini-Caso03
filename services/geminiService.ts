@@ -2,25 +2,24 @@ import { GoogleGenAI } from "@google/genai";
 import { ImageGenConfig, TextEditConfig, SearchResult } from "../types";
 
 /**
- * Servicio de comunicación con Google Gemini.
- * Se instancia el cliente dentro de cada método para garantizar que se utilice 
- * la API KEY inyectada por Vite/Vercel en cada petición.
+ * Servicio de IA optimizado para producción.
+ * Se inicializa el cliente dentro de cada función para garantizar el uso de la clave de entorno.
  */
 
-const getClient = () => {
+const initAI = () => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("API_KEY no configurada. Por favor, añádela en las variables de entorno de Vercel.");
+    throw new Error("API_KEY no detectada. Asegúrate de configurar la variable de entorno 'API_KEY' en Vercel.");
   }
   return new GoogleGenAI({ apiKey });
 };
 
 export const generateImage = async (config: ImageGenConfig): Promise<string> => {
-  const ai = getClient();
+  const ai = initAI();
   const { prompt, style, aspectRatio } = config;
   
-  const styleText = style && style !== 'ninguna' ? ` con estilo ${style}` : '';
-  const finalPrompt = `${prompt}${styleText}. Obra maestra, ultra detallado, iluminación profesional, alta resolución.`;
+  const stylePrompt = style && style !== 'ninguna' ? ` al estilo ${style}` : '';
+  const finalPrompt = `${prompt}${stylePrompt}. Alta resolución, 8k, detalles intrincados, iluminación profesional.`;
   
   try {
     const response = await ai.models.generateContent({
@@ -34,67 +33,66 @@ export const generateImage = async (config: ImageGenConfig): Promise<string> => 
     });
 
     const candidate = response.candidates?.[0];
-    if (!candidate) throw new Error("La IA no devolvió ningún resultado.");
-
-    // Buscamos la parte que contiene los datos de la imagen (inlineData)
+    if (!candidate) throw new Error("No hubo respuesta del modelo de imagen.");
+    
     const imagePart = candidate.content?.parts?.find(p => p.inlineData);
     if (!imagePart || !imagePart.inlineData) {
-      throw new Error("No se pudo generar la imagen. El contenido podría haber sido filtrado por seguridad.");
+      throw new Error("No se pudo obtener la imagen. Es posible que el contenido haya sido bloqueado por filtros de seguridad.");
     }
     
     return `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
   } catch (error: any) {
     console.error("Error en Imagen:", error);
-    throw new Error(error.message || "Error al conectar con el servidor de imágenes de Gemini.");
+    throw new Error(error.message || "Error al generar la imagen.");
   }
 };
 
 export const performSearch = async (query: string): Promise<SearchResult> => {
-  const ai = getClient();
+  const ai = initAI();
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Proporciona información actualizada y detallada sobre: ${query}`,
+      contents: `Proporciona un reporte detallado y actual sobre: ${query}`,
       config: {
         tools: [{ googleSearch: {} }],
-        systemInstruction: 'Eres un investigador de élite. Estructura tu respuesta en bloques lógicos. Usa "---" para separar cada bloque. Cada bloque debe tener: Título, Datos clave (lista) y Fuente.',
+        systemInstruction: 'Eres un analista experto. Divide tu respuesta en bloques usando "---" como separador. Cada bloque debe tener Título, Puntos clave y Fuente.',
       },
     });
 
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
       ?.filter(chunk => chunk.web)
       .map(chunk => ({
-        title: chunk.web?.title || "Enlace de interés",
+        title: chunk.web?.title || "Referencia Web",
         uri: chunk.web?.uri || ""
       })) || [];
 
     return { 
-      text: response.text || "No se encontraron datos relevantes para esta consulta.", 
+      text: response.text || "La búsqueda no arrojó resultados.", 
       sources 
     };
   } catch (error: any) {
     console.error("Error en Búsqueda:", error);
-    throw new Error("Error en la investigación en tiempo real. Verifica que tu API KEY tenga habilitado Google Search.");
+    throw new Error("No se pudo completar la investigación. Revisa que Google Search esté habilitado para tu API Key.");
   }
 };
 
 export const editContent = async (config: TextEditConfig): Promise<string> => {
-  const ai = getClient();
+  const ai = initAI();
   const { text, instruction } = config;
   
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `INSTRUCCIÓN: ${instruction}\n\nTEXTO A EDITAR:\n"${text}"`,
+      contents: `INSTRUCCIÓN: ${instruction}\n\nTEXTO:\n"${text}"`,
       config: {
-        systemInstruction: 'Eres un editor profesional. Tu objetivo es mejorar el texto según la instrucción dada. Devuelve ÚNICAMENTE el texto editado, sin notas, ni saludos ni explicaciones.',
+        systemInstruction: 'Eres un editor profesional. Aplica la instrucción al texto. Devuelve SOLO el texto editado final.',
         temperature: 0.7
       }
     });
 
-    return response.text || "No se pudo procesar la edición del texto.";
+    return response.text || "No se pudo editar el texto.";
   } catch (error: any) {
-    console.error("Error en Edición:", error);
-    throw new Error("El motor de texto no pudo completar la solicitud.");
+    console.error("Error en Texto:", error);
+    throw new Error("Error al procesar el texto con IA.");
   }
 };
