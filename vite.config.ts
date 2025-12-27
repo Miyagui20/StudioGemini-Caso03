@@ -2,17 +2,14 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
-  // Carga las variables de entorno (Vercel inyecta automáticamente las configuradas en el dashboard)
+  // Carga las variables de entorno desde el sistema (Vercel) o archivos .env
   const env = loadEnv(mode, process.cwd(), '');
   
   return {
     plugins: [react()],
     define: {
-      // Reemplazo literal de process.env.API_KEY en el código del cliente
+      // Reemplazo estático de process.env.API_KEY para que funcione en el navegador
       'process.env.API_KEY': JSON.stringify(env.API_KEY || '')
-    },
-    server: {
-      port: 3000
     },
     build: {
       outDir: 'dist',
