@@ -3,15 +3,15 @@ import { GoogleGenAI } from "@google/genai";
 import { ImageGenConfig, TextEditConfig, SearchResult } from "../types";
 
 /**
- * Inicialización del SDK de Google GenAI.
- * La clave se obtiene de process.env.API_KEY inyectada por Vite.
+ * Inicialización centralizada de Google GenAI.
+ * La constante process.env.API_KEY es inyectada por Vite.
  */
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateImage = async (config: ImageGenConfig): Promise<string> => {
   const { prompt, style, aspectRatio } = config;
   const styleText = style && style !== 'ninguna' ? ` en estilo artístico ${style}.` : '';
-  const fullPrompt = `${prompt}${styleText} Alta calidad, detalle cinematográfico, 4k.`;
+  const fullPrompt = `${prompt}${styleText} Alta calidad, detalle cinematográfico, 4k, iluminación profesional.`;
   
   try {
     const response = await ai.models.generateContent({
@@ -26,18 +26,18 @@ export const generateImage = async (config: ImageGenConfig): Promise<string> => 
 
     const candidate = response.candidates?.[0];
     if (!candidate || candidate.finishReason === 'SAFETY') {
-      throw new Error("La generación de imagen fue bloqueada por filtros de seguridad.");
+      throw new Error("Contenido bloqueado por filtros de seguridad. Intenta con una descripción diferente.");
     }
 
     const imagePart = candidate.content?.parts?.find(p => p.inlineData);
     if (!imagePart || !imagePart.inlineData) {
-      throw new Error("El modelo no devolvió datos de imagen válidos.");
+      throw new Error("No se pudo obtener la imagen generada.");
     }
     
     return `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
   } catch (error: any) {
-    console.error("Error en generateImage:", error);
-    throw new Error(error.message || "Error al conectar con el servicio de imágenes.");
+    console.error("Error en Imagen:", error);
+    throw new Error(error.message || "Error al conectar con el servicio de generación de imágenes.");
   }
 };
 
@@ -48,7 +48,7 @@ export const performSearch = async (query: string): Promise<SearchResult> => {
       contents: query,
       config: {
         tools: [{ googleSearch: {} }],
-        systemInstruction: 'Eres un investigador profesional. Proporciona hallazgos estructurados: Título, Lista de puntos clave y Fuente. Separa cada hallazgo con la línea: ---',
+        systemInstruction: 'Eres un investigador profesional. Proporciona hallazgos estructurados: Título, Puntos clave (con viñetas) y Fuente. Separa bloques de información distintos con "---".',
       },
     });
 
@@ -60,12 +60,12 @@ export const performSearch = async (query: string): Promise<SearchResult> => {
       })) || [];
 
     return { 
-      text: response.text || "No se encontraron resultados.", 
+      text: response.text || "No se encontraron resultados relevantes.", 
       sources 
     };
   } catch (error: any) {
-    console.error("Error en performSearch:", error);
-    throw new Error("Error al realizar la investigación en tiempo real.");
+    console.error("Error en Búsqueda:", error);
+    throw new Error("No se pudo completar la investigación en tiempo real.");
   }
 };
 
@@ -75,16 +75,16 @@ export const editContent = async (config: TextEditConfig): Promise<string> => {
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `INSTRUCCIÓN: ${instruction}\n\nTEXTO ORIGINAL: "${text}"`,
+      contents: `INSTRUCCIÓN: ${instruction}\n\nTEXTO: "${text}"`,
       config: {
-        systemInstruction: 'Eres un editor experto. Tu tarea es transformar el texto siguiendo las instrucciones. Devuelve UNICAMENTE el texto transformado.',
+        systemInstruction: 'Eres un editor experto. Transforma el texto según las instrucciones. Devuelve ÚNICAMENTE el texto editado, sin explicaciones ni saludos.',
         temperature: 0.7
       }
     });
 
-    return response.text || "Error al procesar el texto.";
+    return response.text || "No se generó respuesta del modelo.";
   } catch (error: any) {
-    console.error("Error en editContent:", error);
-    throw new Error("Error al procesar el texto con IA.");
+    console.error("Error en Texto:", error);
+    throw new Error("Error al procesar el texto con inteligencia artificial.");
   }
 };

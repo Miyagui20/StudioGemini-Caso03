@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    // Inyecta la clave de API desde el entorno de construcción de Vercel/Local al cliente
+    // Inyecta la clave de entorno directamente para que el SDK la encuentre en process.env
     'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
   },
   server: {
