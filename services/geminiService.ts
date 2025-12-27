@@ -2,21 +2,30 @@ import { GoogleGenAI } from "@google/genai";
 import { ImageGenConfig, TextEditConfig, SearchResult } from "../types";
 
 /**
- * Servicio centralizado para interactuar con los modelos de Google Gemini.
- * La instancia se crea en cada llamada para asegurar el uso de la clave de API inyectada.
+ * Servicio de comunicación con Google Gemini.
+ * Se instancia el cliente dentro de cada método para garantizar que se utilice 
+ * la API KEY inyectada por Vite/Vercel en cada petición.
  */
 
+const getClient = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("API_KEY no configurada. Por favor, añádela en las variables de entorno de Vercel.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
+
 export const generateImage = async (config: ImageGenConfig): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getClient();
   const { prompt, style, aspectRatio } = config;
   
-  const styleInstruction = style && style !== 'ninguna' ? ` con un estilo artístico de tipo ${style}` : '';
-  const enhancedPrompt = `${prompt}${styleInstruction}. Calidad fotográfica ultra-detallada, iluminación cinemática, composición profesional.`;
+  const styleText = style && style !== 'ninguna' ? ` con estilo ${style}` : '';
+  const finalPrompt = `${prompt}${styleText}. Obra maestra, ultra detallado, iluminación profesional, alta resolución.`;
   
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
-      contents: { parts: [{ text: enhancedPrompt }] },
+      contents: { parts: [{ text: finalPrompt }] },
       config: {
         imageConfig: {
           aspectRatio: aspectRatio || '1:1'
@@ -25,68 +34,67 @@ export const generateImage = async (config: ImageGenConfig): Promise<string> => 
     });
 
     const candidate = response.candidates?.[0];
-    if (!candidate) throw new Error("No se recibió respuesta de la IA.");
-    
-    // Iteramos por las partes para encontrar la que contiene los datos de la imagen
+    if (!candidate) throw new Error("La IA no devolvió ningún resultado.");
+
+    // Buscamos la parte que contiene los datos de la imagen (inlineData)
     const imagePart = candidate.content?.parts?.find(p => p.inlineData);
     if (!imagePart || !imagePart.inlineData) {
-      throw new Error("No se pudo generar la imagen. Intenta con una descripción más detallada o diferente.");
+      throw new Error("No se pudo generar la imagen. El contenido podría haber sido filtrado por seguridad.");
     }
     
     return `data:${imagePart.inlineData.mimeType || 'image/png'};base64,${imagePart.inlineData.data}`;
   } catch (error: any) {
-    console.error("Error en Imagen Gemini:", error);
-    throw new Error(error.message || "Error al conectar con el motor de imágenes.");
+    console.error("Error en Imagen:", error);
+    throw new Error(error.message || "Error al conectar con el servidor de imágenes de Gemini.");
   }
 };
 
 export const performSearch = async (query: string): Promise<SearchResult> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getClient();
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Investiga a fondo y proporciona datos actuales sobre: ${query}`,
+      contents: `Proporciona información actualizada y detallada sobre: ${query}`,
       config: {
         tools: [{ googleSearch: {} }],
-        systemInstruction: 'Eres un analista de datos experto. Proporciona información verificada y estructurada. Usa "---" para separar secciones. Cada sección debe tener un título, detalles y mencionar la fuente.',
+        systemInstruction: 'Eres un investigador de élite. Estructura tu respuesta en bloques lógicos. Usa "---" para separar cada bloque. Cada bloque debe tener: Título, Datos clave (lista) y Fuente.',
       },
     });
 
-    // Extraemos las fuentes de grounding de Google Search
     const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks
       ?.filter(chunk => chunk.web)
       .map(chunk => ({
-        title: chunk.web?.title || "Sitio Web",
+        title: chunk.web?.title || "Enlace de interés",
         uri: chunk.web?.uri || ""
       })) || [];
 
     return { 
-      text: response.text || "La búsqueda no devolvió resultados legibles.", 
+      text: response.text || "No se encontraron datos relevantes para esta consulta.", 
       sources 
     };
   } catch (error: any) {
-    console.error("Error en Búsqueda Gemini:", error);
-    throw new Error("Fallo en la investigación en tiempo real. Verifica tu conexión.");
+    console.error("Error en Búsqueda:", error);
+    throw new Error("Error en la investigación en tiempo real. Verifica que tu API KEY tenga habilitado Google Search.");
   }
 };
 
 export const editContent = async (config: TextEditConfig): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = getClient();
   const { text, instruction } = config;
   
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `TEXTO ORIGINAL:\n${text}\n\nINSTRUCCIÓN DE EDICIÓN:\n${instruction}`,
+      contents: `INSTRUCCIÓN: ${instruction}\n\nTEXTO A EDITAR:\n"${text}"`,
       config: {
-        systemInstruction: 'Eres un editor de textos profesional. Aplica las instrucciones de forma precisa. Devuelve únicamente el texto final corregido/editado, sin comentarios adicionales.',
-        temperature: 0.8
+        systemInstruction: 'Eres un editor profesional. Tu objetivo es mejorar el texto según la instrucción dada. Devuelve ÚNICAMENTE el texto editado, sin notas, ni saludos ni explicaciones.',
+        temperature: 0.7
       }
     });
 
-    return response.text || "No se pudo procesar el texto.";
+    return response.text || "No se pudo procesar la edición del texto.";
   } catch (error: any) {
-    console.error("Error en Texto Gemini:", error);
-    throw new Error("Error en el motor de procesamiento de lenguaje natural.");
+    console.error("Error en Edición:", error);
+    throw new Error("El motor de texto no pudo completar la solicitud.");
   }
 };
