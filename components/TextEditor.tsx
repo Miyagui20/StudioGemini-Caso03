@@ -32,7 +32,6 @@ export const TextEditor: React.FC<TextEditorProps> = ({ onLoading, onError, onRe
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Construir la instrucción final combinando selecciones y texto manual
     const combinedInstructions = [
       ...selectedInstructions,
       ...(customInstruction.trim() ? [customInstruction.trim()] : [])
@@ -117,8 +116,8 @@ export const TextEditor: React.FC<TextEditorProps> = ({ onLoading, onError, onRe
           type="submit"
           className="flex-grow bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-slate-300 transition-all flex items-center justify-center gap-2 group"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 group-hover:scale-110 transition-transform" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
           Procesar Texto Inteligente
         </button>
