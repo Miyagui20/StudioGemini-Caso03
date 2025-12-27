@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Layout } from './components/Layout';
 import { ImageGenerator } from './components/ImageGenerator';
@@ -109,11 +108,6 @@ const App: React.FC = () => {
 
     return (
       <div className="mt-8 md:mt-10 bg-slate-900 text-slate-100 rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-2xl relative group overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-30">
-          <svg className="w-8 h-8 md:w-12 md:h-12" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-          </svg>
-        </div>
         <div className="relative z-10 whitespace-pre-wrap text-base md:text-lg italic leading-relaxed">{state.result as string}</div>
         <button 
           onClick={() => navigator.clipboard.writeText(state.result as string)} 
@@ -134,7 +128,6 @@ const App: React.FC = () => {
           </div>
           <h2 className="text-3xl md:text-5xl font-black text-slate-900 mb-6 md:mb-8 tracking-tight">Scri<span className="text-indigo-600">Pic</span></h2>
           
-          {/* Navegación Ultra Responsiva */}
           <div className="grid grid-cols-3 gap-1 md:flex md:justify-center md:gap-4 mb-2 max-w-sm mx-auto md:max-w-none">
             {[
               { id: WorkflowType.IMAGE_GENERATION, label: 'Imagen', icon: '🎨' },
